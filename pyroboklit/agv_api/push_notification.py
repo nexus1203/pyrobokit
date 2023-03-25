@@ -10,13 +10,13 @@
 """
 
 from ..tcp_transport import TcpTransport
-from ..tcp_transport import API_PUSH_PORT
+from ..tcp_transport import API_PORT_PUSH
 from threading import Thread
 
 
 class Notification:
 
-    def __init__(self, ip, port=API_PUSH_PORT):
+    def __init__(self, ip, port=API_PORT_PUSH):
         self.ip = ip
         self.port = port
         self.transport = TcpTransport(ip, port)
