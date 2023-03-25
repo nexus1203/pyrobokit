@@ -43,34 +43,11 @@ class SeerData:
             struct.pack('!BBHLH6s', 0x5A, 0x01, request_id, size, msg_type,
                         b'\x00\x00\x00\x00\x00\x00'))
         self.data = data
-        # Update request_id (number) in the header
-        # struct.pack_into('!H', self.header, 2, request_id)
 
         return 16 + size
 
     def get_packed_message(self):
         return self.header + self.data
-
-
-def __pack_message(requestId, msgType, msg={}):
-    """
-    Packs a message into a byte array
-    """
-    PACK_HEAD_FMT_STR = '!BBHLH6s'
-    PACK_RSV_DATA = b'\x00\x00\x00\x00\x00\x00'
-    messageLength = 0
-    if msg != {}:
-        asJson = json.dumps(msg)
-        messageLength = len(asJson)
-        rawMessage = struct.pack(PACK_HEAD_FMT_STR, 0x5A, 1, requestId,
-                                 msgType, messageLength, PACK_RSV_DATA)
-        rawMessage += bytearray(asJson, 'utf-8')
-        return rawMessage
-    else:
-        rawMessage = struct.pack(PACK_HEAD_FMT_STR, 0x5A, 1, requestId,
-                                 msgType, messageLength, PACK_RSV_DATA)
-        print(rawMessage.hex())
-        return rawMessage
 
 
 def unpack_header(data):
