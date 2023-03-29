@@ -5,7 +5,7 @@
 ║ Author:         Nexus1203                                ║
 ║ Created:        2023-03-23                               ║
 ║ Last Modified:  2023-03-23                               ║
-║ Description:                                             ║  
+║ Description:    Notification port functions of API       ║  
 ╚══════════════════════════════════════════════════════════╝
 """
 
