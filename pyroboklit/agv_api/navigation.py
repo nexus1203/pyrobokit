@@ -11,16 +11,25 @@
 
 from ..tcp_transport import TcpTransport
 from ..tcp_transport import API_PORT_TASK
-from .utils import check_success
+from .utils import check_success, to_json
 # import time
 
 
 class TaskOneStation:
 
-    def __init__(self, dest_id: str, source_id: str, task_id: str,
-                 angle: float, method: str, max_speed: float,
-                 max_wspeed: float, max_acc: float, max_wacc: float,
-                 duration: float, orientation: float, spin: bool) -> None:
+    def __init__(self,
+                 dest_id: str,
+                 source_id: str = None,
+                 task_id: str = None,
+                 angle: float = None,
+                 method: str = None,
+                 max_speed: float = None,
+                 max_wspeed: float = None,
+                 max_acc: float = None,
+                 max_wacc: float = None,
+                 duration: float = None,
+                 orientation: float = None,
+                 spin: bool = None) -> None:
         """
         Single Station Task. The AGV will move to the target site and stop there.
         One may repeat send a single station tasks to the AGV in order to set its maximum speed, acceleration, and angular speed.
@@ -73,20 +82,13 @@ class TaskOneStation:
         self.orientation = orientation
         self.spin = spin
 
-    def to_json(self) -> str:
-        as_json = self.__dict__
-        # remove None values
-        as_json = {k: v for k, v in as_json.items() if v is not None}
-
-        return as_json
-
     def execute(self, transport):
         """_summary_
 
         Args:
             transport (TcpTransport): transport object
         """
-        self.msg = self.to_json()
+        self.msg = to_json(self)
         if "id" not in self.msg:
             raise ValueError(
                 "destination id is required, please set the dest_id as string (e.g. 'LM15', 'AP14')"
@@ -129,8 +131,8 @@ class TaskMultiStation:
 
         self.tasks = tasks
 
-    def to_json(self) -> str:
-        as_json = {"move_task_list": [task.to_json() for task in self.tasks]}
+    def _as_json(self) -> str:
+        as_json = {"move_task_list": [to_json(task) for task in self.tasks]}
         return as_json
 
     def execute(self, transport):
@@ -139,7 +141,7 @@ class TaskMultiStation:
         Args:
             transport (TcpTransport): transport object
         """
-        self.msg = self.to_json()
+        self.msg = self._as_json()
         if "move_task_list" not in self.msg:
             raise ValueError("task list is required")
         if len(self.msg["move_task_list"]) == 0:
@@ -152,8 +154,14 @@ class TaskMultiStation:
 
 class TaskCoordinate:
 
-    def __init__(self, x: float, y: float, angle: float, max_speed: float,
-                 max_wspeed: float, max_acc: float, max_wacc: float) -> None:
+    def __init__(self,
+                 x: float,
+                 y: float,
+                 angle: float,
+                 max_speed: float = None,
+                 max_wspeed: float = None,
+                 max_acc: float = None,
+                 max_wacc: float = None) -> None:
         """
         Move the AGV to a specific coordinate on the map. The AGV will move to the target coordinate and stop.
         if the angle is not set, the AGV will not rotate. If the angle is set, the AGV will rotate to the target angle.
@@ -182,20 +190,13 @@ class TaskCoordinate:
         self.max_acc = max_acc
         self.max_wacc = max_wacc
 
-    def to_json(self) -> str:
-        as_json = self.__dict__
-        # remove None values
-        as_json = {k: v for k, v in as_json.items() if v is not None}
-
-        return as_json
-
     def execute(self, transport):
         """_summary_
 
         Args:
             transport (TcpTransport): transport object
         """
-        self.msg = self.to_json()
+        self.msg = to_json(self)
         if "angle" not in self.msg:
             raise ValueError("angle is required")
         if "x" not in self.msg:

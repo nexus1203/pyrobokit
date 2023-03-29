@@ -16,3 +16,15 @@ def check_success(response):
         return False
     else:
         return True
+
+
+def to_json(class_instance):
+    as_json = class_instance.__dict__
+    # remove None values
+    as_json = {k: v for k, v in as_json.items() if v is not None}
+    # remove request id, message type and msg if they exist
+    as_json.pop("requestId", None)
+    as_json.pop("messageType", None)
+    as_json.pop("msg", None)
+
+    return as_json
