@@ -1,5 +1,5 @@
-from seer_robokit.tcp_transport import TcpTransport
-from seer_robokit.tcp_transport import API_PORT_CTRL
+from pyrobokit.tcp_transport import TcpTransport
+from pyrobokit.tcp_transport import API_PORT_CTRL
 import time
 
 ip_address = "192.168.x.x"
