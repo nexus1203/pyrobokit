@@ -4,11 +4,11 @@
 ║ File:           navigation.py                            ║
 ║ Author:         Nexus1203                                ║
 ║ Created:        2023-03-28                               ║
-║ Last Modified:  2023-03-28                               ║
+║ Last Modified:  2023-03-30                               ║
 ║ Description:    Navigation port features of robotkit api ║  
 ╚══════════════════════════════════════════════════════════╝
 """
-
+from typing import List
 from ..tcp_transport import TcpTransport
 from ..tcp_transport import API_PORT_TASK
 from .utils import check_success, to_json
@@ -100,7 +100,7 @@ class TaskOneStation:
 
 class TaskMultiStation:
 
-    def __init__(self, tasks: list) -> None:
+    def __init__(self, tasks: List[TaskOneStation]) -> None:
         """
         Move to multiple stations. This is a multi-point task. The AGV will move to the first station, 
         then to the second station, and so on. The AGV will stop at the last station.
@@ -123,7 +123,7 @@ class TaskMultiStation:
         In above code, the AGV will move from LM1 to LM15, then stop for 100ms, and move to LM16, then move to LM17 without any delay in between, then stop for 100ms.
 
         Args:
-            tasks (list): list of TaskOneStation
+            tasks (List[TaskOneStation]): list of TaskOneStation objects
         """
         self.requestId = 0
         self.messageType = 3066  # multi point task
@@ -266,6 +266,172 @@ class TaskCancel:
         Args:
             transport (TcpTransport): transport object
         """
+        response = transport.send_n_receive(self.requestId, self.messageType,
+                                            self.msg)
+        return check_success(response)
+
+
+class TaskRouteListQuery:
+
+    def __init__(self, ) -> None:
+        """Query the route list (stations list or path) of the AGV.
+        """
+        self.requestId = 0
+        self.messageType = 3053  #robot_task_target_path_req
+        self.msg = {}
+        self.route_list = []
+
+    def execute(self, transport):
+        response = transport.send_n_receive(self.requestId, self.messageType,
+                                            self.msg)
+        if check_success(response):
+            self.route_list = response["path"]
+            return True
+        else:
+            return False
+
+
+class TaskClearMultiStations:
+
+    def __init__(self, ) -> None:
+        """
+        Clear the multi-stations list of the AGV (only for stations list tasks issued by TaskMultiStation)
+        """
+        self.requestId = 0
+        self.messageType = 3067
+        self.msg = {}
+
+    def execute(self, transport):
+        response = transport.send_n_receive(self.requestId, self.messageType,
+                                            self.msg)
+        return check_success(response)
+
+
+class TaskClearSpecificTask:
+
+    def __init__(self, task_id: int) -> None:
+        """
+        Clear the specific task from the multi-stations list of the AGV (only for stations list tasks issued by TaskMultiStation)
+        """
+        self.requestId = 0
+        self.messageType = 3068
+        self.msg = {}
+        self.station_id = task_id
+
+    def execute(self, transport):
+        self.msg = to_json(self)
+        response = transport.send_n_receive(self.requestId, self.messageType,
+                                            self.msg)
+        return check_success(response)
+
+
+class TaskChainQuery:
+
+    def __init__(self,
+                 task_list_name: str,
+                 with_robot_status: bool = True) -> None:
+        """_summary_
+
+        Args:
+            task_list_name (str): The name of the task chain that needs to be queried. 
+                                This task chain is the last executed (executing) task chain. 
+                                If the task chain can be queried, the details will be returned, if not, taskListStatus will return 404.
+            with_robot_status (bool, optional): If it is true, return the status data of the robot. 
+                                                In the current status data, there is only power information. Defaults to True.
+
+        """
+        self.requestId = 0
+        self.messageType = 3101  # robot_tasklist_status_req
+        self.msg = {}
+
+        self.task_list_name = task_list_name
+        self.with_robot_status = with_robot_status
+        self.tasklist_status = None
+        self.robot_status = None
+
+    @staticmethod
+    def check_status(TaskListStaus: int):
+        """A static method to check the status of the task chain query.
+            Use the value of TaskListStaus key in tasklist_status to check the status of the task.
+
+        Args:
+            TaskListStaus (int): TaskListStaus attribute of TaskChainQuery's response for tasklist_status
+        Returns:
+            (str): descripton of the status
+        """
+        if TaskListStaus == 0:
+            return "None"
+        elif TaskListStaus == 1:
+            return "Waiting"
+        elif TaskListStaus == 2:
+            return "Running"
+        elif TaskListStaus == 3:
+            return "Suspended"
+        elif TaskListStaus == 4:
+            return "Completed"
+        elif TaskListStaus == 5:
+            return "Failed"
+        elif TaskListStaus == 6:
+            return "Canceled"
+        elif TaskListStaus == 7:
+            return "OverTime"
+        else:
+            return "Unknown"
+
+    def execute(self, transport):
+        self.msg = to_json(self)
+        self.msg.pop("tasklist_status"
+                     )  # remove the key to avoid the error of the server
+        self.msg.pop(
+            "robot_status")  # remove the key to avoid the error of the server
+
+        response = transport.send_n_receive(self.requestId, self.messageType,
+                                            self.msg)
+        if check_success(response):
+            self.task_list_status = response["tasklist_status"]
+            if self.with_robot_status:
+                self.robot_status = response["robot_status"]
+            return True
+        else:
+            return False
+
+
+class TaskChainlistQuery:
+
+    def __init__(self, ) -> None:
+        """
+        Query the list of tasks chains of the AGV.
+        """
+        self.requestId = 0
+        self.messageType = 3115
+        self.msg = {}
+        self.tasklists = None
+
+    def execute(self, transport):
+        response = transport.send_n_receive(self.requestId, self.messageType,
+                                            self.msg)
+        if check_success(response):
+            self.tasklists = response["tasklists"]
+            return True
+        else:
+            return False
+
+
+class TaskExecuteTaskChain:
+
+    def __init__(self, name: str) -> None:
+        """
+        Execute a pre-existing task chain on the AGV.
+        
+        Args:
+            name (str): name of the task chain to be executed
+        """
+        self.requestId = 0
+        self.messageType = 3106
+        self.msg = {}
+        self.name = name
+
+    def execute(self, transport):
         response = transport.send_n_receive(self.requestId, self.messageType,
                                             self.msg)
         return check_success(response)

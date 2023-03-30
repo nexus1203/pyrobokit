@@ -87,7 +87,7 @@ class SetDigitalOutput:
 
 class SetBatchDigitalOutput:
 
-    def __init__(self, ListDigitalOutput: list):
+    def __init__(self, ListDigitalOutput: list = None):
         """
         A class to set the value of a digital output virtually
 
@@ -125,7 +125,7 @@ class ForkliftStop:
 
 class ForkliftHeight:
 
-    def __init__(self, height: float):
+    def __init__(self, height: float = 0.0):
         """
         A class to set the forklift height
 
@@ -145,7 +145,82 @@ class ForkliftHeight:
         return check_success(response)
 
 
-class StopAudio:
+class AudioList:
+
+    def __init__(self) -> None:
+        """Get a list of available audio files"""
+        self.requestId = 0
+        self.messageType = 6033
+        self.msg = {}
+        self.audio_list = []
+
+    def execute(self, transport):
+        response = transport.send_n_receive(self.requestId, self.messageType,
+                                            self.msg)
+        if check_success(response):
+            self.audio_list = response["audios"]
+            return True
+        else:
+            return False
+
+
+class AudioPlay:
+
+    def __init__(self, name: str, loop: bool = False) -> None:
+        """
+        A class to play audio
+
+        Args:
+            name (str): filename of the audio file
+            loop (bool, optional): loop the audio. Defaults to False.
+        """
+        self.requestId = 0
+        self.messageType = 6000
+        self.msg = {}
+        if name is None:
+            raise ValueError(
+                "Audio name cannot be None, please provide a valid name\n." +
+                "You can get a list of available audio files with the AudioList class"
+            )
+        self.name = name
+        self.loop = loop
+
+    def execute(self, transport):
+        self.msg = to_json(self)
+        response = transport.send_n_receive(self.requestId, self.messageType,
+                                            self.msg)
+        return check_success(response)
+
+
+class AudioPause:
+
+    def __init__(self) -> None:
+        """Pause playing audio"""
+        self.requestId = 0
+        self.messageType = 6010
+        self.msg = {}
+
+    def execute(self, transport):
+        response = transport.send_n_receive(self.requestId, self.messageType,
+                                            self.msg)
+        return check_success(response)
+
+
+class AudioContine:
+
+    def __init__(self) -> None:
+        """Continue playing audio"""
+        self.requestId = 0
+        self.messageType = 6011
+        self.msg = {}
+
+    def execute(self, transport):
+        response = transport.send_n_receive(self.requestId, self.messageType,
+                                            self.msg)
+        return check_success(response)
+
+
+class AudioStop:
 
     def __init__(self) -> None:
         """
@@ -159,3 +234,44 @@ class StopAudio:
         response = transport.send_n_receive(self.requestId, self.messageType,
                                             self.msg)
         return check_success(response)
+
+
+class OtherAPI:
+
+    def __init__(self, ip: str, port: int = API_PORT_OTHER):
+        """Other API class. This class is used to execute other API requests.
+        
+        usage:
+        ```python
+        oapi = OtherAPI("127.0.0.1")
+        # set digital output 0 to True
+        success = oapi.execute(SetDigitalOutput(0, True))
+        # set forklift height to 0.05 m
+        success = oapi.execute(ForkliftHeight(0.05))
+        # soft stop the forklift
+        success = oapi.execute(SoftEMC(stop=True))
+        
+        # get the list of available audio files
+        audio_list = AudioList()
+        success = oapi.execute(audio_list)
+        print(audio_list.audio_list)
+        ```
+        
+        Args:
+            ip (str): IP address of the AGV's SEER controller
+            port (int, optional): API port of Other functions. Defaults to API_PORT_OTHER.
+        """
+        self.ip = ip
+        self.port = port
+        self.transport = TcpTransport(ip, port)
+
+    def execute(self, request):
+        """execute a request and return the response
+
+        Args:
+            request (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        return request.execute(self.transport)
