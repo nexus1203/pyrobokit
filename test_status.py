@@ -1,4 +1,4 @@
-from seer_robokit.agv_api import Status
+from pyrobokit.agv_api import Status
 from time import sleep
 
 ip = "192.168.11.191"
