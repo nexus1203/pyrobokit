@@ -1,4 +1,4 @@
-from seer_robokit.agv_api import Notification
+from pyrobokit.agv_api import Notification
 from time import sleep
 from time import perf_counter as pf
 
