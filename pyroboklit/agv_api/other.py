@@ -29,7 +29,7 @@ class SoftEMC:
 
         self.status = stop
 
-    def execute(self, transport):
+    def _execute(self, transport):
         self.msg = to_json(self)
 
         response = transport.send_n_receive(self.requestId, self.messageType,
@@ -53,7 +53,7 @@ class SetDigitalInput:
         self.id = id
         self.status = value
 
-    def execute(self, transport):
+    def _execute(self, transport):
         self.msg = to_json(self)
 
         response = transport.send_n_receive(self.requestId, self.messageType,
@@ -77,7 +77,7 @@ class SetDigitalOutput:
         self.id = id
         self.status = value
 
-    def execute(self, transport):
+    def _execute(self, transport):
         self.msg = to_json(self)
 
         response = transport.send_n_receive(self.requestId, self.messageType,
@@ -99,7 +99,7 @@ class SetBatchDigitalOutput:
         self.msg = {}
         self.IO_list = ListDigitalOutput
 
-    def execute(self, transport):
+    def _execute(self, transport):
         as_json = [to_json(io_class) for io_class in self.IO_list]
 
         response = transport.send_n_receive(self.requestId, self.messageType,
@@ -117,7 +117,7 @@ class ForkliftStop:
         self.messageType = 6041
         self.msg = {}
 
-    def execute(self, transport):
+    def _execute(self, transport):
         response = transport.send_n_receive(self.requestId, self.messageType,
                                             self.msg)
         return check_success(response)
@@ -137,7 +137,7 @@ class ForkliftHeight:
         self.msg = {}
         self.height = height
 
-    def execute(self, transport):
+    def _execute(self, transport):
         self.msg = to_json(self)
 
         response = transport.send_n_receive(self.requestId, self.messageType,
@@ -154,7 +154,7 @@ class AudioList:
         self.msg = {}
         self.audio_list = []
 
-    def execute(self, transport):
+    def _execute(self, transport):
         response = transport.send_n_receive(self.requestId, self.messageType,
                                             self.msg)
         if check_success(response):
@@ -185,7 +185,7 @@ class AudioPlay:
         self.name = name
         self.loop = loop
 
-    def execute(self, transport):
+    def _execute(self, transport):
         self.msg = to_json(self)
         response = transport.send_n_receive(self.requestId, self.messageType,
                                             self.msg)
@@ -200,7 +200,7 @@ class AudioPause:
         self.messageType = 6010
         self.msg = {}
 
-    def execute(self, transport):
+    def _execute(self, transport):
         response = transport.send_n_receive(self.requestId, self.messageType,
                                             self.msg)
         return check_success(response)
@@ -214,7 +214,7 @@ class AudioContine:
         self.messageType = 6011
         self.msg = {}
 
-    def execute(self, transport):
+    def _execute(self, transport):
         response = transport.send_n_receive(self.requestId, self.messageType,
                                             self.msg)
         return check_success(response)
@@ -230,7 +230,7 @@ class AudioStop:
         self.messageType = 6012
         self.msg = {}
 
-    def execute(self, transport):
+    def _execute(self, transport):
         response = transport.send_n_receive(self.requestId, self.messageType,
                                             self.msg)
         return check_success(response)
@@ -269,9 +269,9 @@ class OtherAPI:
         """execute a request and return the response
 
         Args:
-            request (_type_): _description_
+            request (class): Other API request class (e.g. SetDigitalOutput, ForkliftHeight, etc.)
 
         Returns:
-            _type_: _description_
+            bool: returns the success of the request, True if successful, False if not.
         """
-        return request.execute(self.transport)
+        return request._execute(self.transport)

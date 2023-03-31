@@ -39,8 +39,8 @@ class TaskOneStation:
         from time import sleep
         # create a task object
         task = TaskOneStation(dest_id="LM15", source_id = "LM1", max_speed=0.5)
-        # use the Navigation class to send the task to the AGV
-        Nav = Navigation(ip = "127.0.0.1")
+        # use the NavigationAPI class to send the task to the AGV
+        Nav = NavigationAPI(ip = "127.0.0.1")
         Nav.execute(task)
         # wait for 5 seconds
         sleep(5)
@@ -82,7 +82,7 @@ class TaskOneStation:
         self.orientation = orientation
         self.spin = spin
 
-    def execute(self, transport):
+    def _execute(self, transport):
         """_summary_
 
         Args:
@@ -115,8 +115,8 @@ class TaskMultiStation:
         task3 = TaskOneStation(dest_id="LM17", source_id = "LM16", duration=100)
         # combine the tasks into a multi-point task
         m_task = TaskMultiStation([task1, task2, task3])
-        # use the Navigation class to send the task to the AGV
-        Nav = Navigation(ip = "127.0.0.1")
+        # use the NavigationAPI class to send the task to the AGV
+        Nav = NavigationAPI(ip = "127.0.0.1")
         success = Nav.execute(m_task)
         print(success)
         ```
@@ -135,7 +135,7 @@ class TaskMultiStation:
         as_json = {"move_task_list": [to_json(task) for task in self.tasks]}
         return as_json
 
-    def execute(self, transport):
+    def _execute(self, transport):
         """_summary_
 
         Args:
@@ -190,8 +190,8 @@ class TaskCoordinate:
         self.max_acc = max_acc
         self.max_wacc = max_wacc
 
-    def execute(self, transport):
-        """_summary_
+    def _execute(self, transport):
+        """ excute the task to be used by Navigation class
 
         Args:
             transport (TcpTransport): transport object
@@ -218,7 +218,7 @@ class TaskSuspend:
         self.messageType = 3001  # suspend task
         self.msg = {}
 
-    def execute(self, transport):
+    def _execute(self, transport):
         """_summary_
 
         Args:
@@ -239,7 +239,7 @@ class TaskResume:
         self.messageType = 3002  # resume task
         self.msg = {}
 
-    def execute(self, transport):
+    def _execute(self, transport):
         """ excute the task
 
         Args:
@@ -260,7 +260,7 @@ class TaskCancel:
         self.messageType = 3003  # cancel task
         self.msg = {}
 
-    def execute(self, transport):
+    def _execute(self, transport):
         """_summary_
 
         Args:
@@ -281,7 +281,7 @@ class TaskRouteListQuery:
         self.msg = {}
         self.route_list = []
 
-    def execute(self, transport):
+    def _execute(self, transport):
         response = transport.send_n_receive(self.requestId, self.messageType,
                                             self.msg)
         if check_success(response):
@@ -301,7 +301,7 @@ class TaskClearMultiStations:
         self.messageType = 3067
         self.msg = {}
 
-    def execute(self, transport):
+    def _execute(self, transport):
         response = transport.send_n_receive(self.requestId, self.messageType,
                                             self.msg)
         return check_success(response)
@@ -318,7 +318,7 @@ class TaskClearSpecificTask:
         self.msg = {}
         self.station_id = task_id
 
-    def execute(self, transport):
+    def _execute(self, transport):
         self.msg = to_json(self)
         response = transport.send_n_receive(self.requestId, self.messageType,
                                             self.msg)
@@ -378,7 +378,7 @@ class TaskChainQuery:
         else:
             return "Unknown"
 
-    def execute(self, transport):
+    def _execute(self, transport):
         self.msg = to_json(self)
         self.msg.pop("tasklist_status"
                      )  # remove the key to avoid the error of the server
@@ -407,7 +407,7 @@ class TaskChainlistQuery:
         self.msg = {}
         self.tasklists = None
 
-    def execute(self, transport):
+    def _execute(self, transport):
         response = transport.send_n_receive(self.requestId, self.messageType,
                                             self.msg)
         if check_success(response):
@@ -431,16 +431,16 @@ class TaskExecuteTaskChain:
         self.msg = {}
         self.name = name
 
-    def execute(self, transport):
+    def _execute(self, transport):
         response = transport.send_n_receive(self.requestId, self.messageType,
                                             self.msg)
         return check_success(response)
 
 
-class Navigation:
+class NavigationAPI:
 
     def __init__(self, ip: str, port: int = API_PORT_TASK) -> None:
-        """Navigation class.
+        """NavigationAPI class.
         An instance of this class is used to manage navigation commands to the robot.
 
         Args:
@@ -459,18 +459,18 @@ class Navigation:
         usage:
         To move AGV to a specific station on the map:
         ```
-        Nav = Navigation(ip='127.0.0.1')
+        Nav = NavigationAPI(ip='127.0.0.1')
         s_task = TaskOneStation(dest_id='LM15', max_speed=0.5, max_acc=0.5)
         success = Nav.execute(s_task)
         print(success)
         ```
         To cancel the task:
         ```
-        Nav = Navigation(ip='127.0.0.1')
+        Nav = NavigationAPI(ip='127.0.0.1')
         success = Nav.execute(TaskCancel())
         print(success)
         ```
         Args:
             task (Task): Task object to be executed
         """
-        return task.execute(self.transport)
+        return task._execute(self.transport)

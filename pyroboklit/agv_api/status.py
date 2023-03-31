@@ -11,11 +11,11 @@
 
 from ..tcp_transport import TcpTransport
 from ..tcp_transport import API_PORT_STATE
-from .utils import *
+from .utils import check_success, to_json
 import time
 
 
-class Battery:
+class StatusBattery:
 
     def __init__(self, ):
         """
@@ -45,7 +45,7 @@ class Battery:
 
         self.json_data = {}
 
-    def get_status(self, transport):
+    def _get_status(self, transport):
         # self.msg = {"simple": "no"}  # get all battery status
         # send command and receive data
         data = transport.send_n_receive(self.requestId, self.messageType,
@@ -54,7 +54,7 @@ class Battery:
         self.json_data = data
         self.success = check_success(data)
 
-        if data["ret_code"] == 0:
+        if self.success:
             self.level = data["battery_level"]
             self.temp = data["battery_temp"]
             self.voltage = data["voltage"]
@@ -69,9 +69,10 @@ class Battery:
         else:
             self.create_on = data["create_on"]
             self.err_msg = data["err_msg"]
+        return self.success
 
 
-class AGV_Pose:
+class StatusPose:
 
     def __init__(self, ):
         # API request data
@@ -93,7 +94,7 @@ class AGV_Pose:
 
         self.json_data = {}
 
-    def get_status(self, transport):
+    def _get_status(self, transport):
 
         # send command and receive data
         data = transport.send_n_receive(self.requestId, self.messageType,
@@ -101,7 +102,7 @@ class AGV_Pose:
         # parse data
         self.json_data = data
         self.success = check_success(data)
-        if data["ret_code"] == 0:
+        if self.success:
             self.x = data["x"]
             self.y = data["y"]
             self.angle = data["angle"]
@@ -113,8 +114,10 @@ class AGV_Pose:
             self.err_msg = data["err_msg"]
             self.create_on = data["create_on"]
 
+        return self.success
 
-class AGV_Speed:
+
+class StatusSpeed:
 
     def __init__(self) -> None:
         self.requestId = 0
@@ -141,14 +144,14 @@ class AGV_Speed:
 
         self.json_data = {}
 
-    def get_status(self, transport):
+    def _get_status(self, transport):
         # send command and receive data
         data = transport.send_n_receive(self.requestId, self.messageType,
                                         self.msg)
         # parse data
         self.json_data = data
         self.success = check_success(data)
-        if data["ret_code"] == 0:
+        if self.success:
             self.vx = data["vx"]
             self.vy = data["vy"]
             self.w = data["w"]
@@ -165,11 +168,15 @@ class AGV_Speed:
         else:
             self.err_msg = data["err_msg"]
             self.create_on = data["create_on"]
+        return self.success
 
 
-class Forklift:
+class StatusForklift:
 
     def __init__(self) -> None:
+        """Get the fork status of the AGV and the current fork height including the fork height in place and the fork auto flag.
+        To inspect all the values, you can use "json_data" attribute.
+        """
         self.requestId = 0
         self.messageType = 1028  # forklift status query
         self.msg = {}  # empty message
@@ -188,14 +195,14 @@ class Forklift:
 
         self.json_data = {}
 
-    def get_status(self, transport):
+    def _get_status(self, transport):
         # send command and receive data
         transport.send_command(self.requestId, self.messageType, self.msg)
         data = transport.listen()
         # parse data
         self.json_data = data
         self.success = check_success(data)
-        if data["ret_code"] == 0:
+        if self.success:
             self.fork_height = data["fork_height"]
             self.fork_height_in_place = data["fork_height_in_place"]
             self.fork_auto_flag = data["fork_auto_flag"]
@@ -207,11 +214,15 @@ class Forklift:
         else:
             self.err_msg = data["err_msg"]
             self.create_on = data["create_on"]
+        return self.success
 
 
-class BlockedStatus:
+class StatusBlocked:
 
     def __init__(self) -> None:
+        """
+        Get the status of why the AGV is blocked and the current slow down status.
+        """
         self.requestId = 0
         self.messageType = 1006  # blocked status query
         self.msg = {}  # empty message
@@ -260,7 +271,7 @@ class BlockedStatus:
         else:
             return "Unknown"
 
-    def get_status(self, transport):
+    def _get_status(self, transport):
         self.live = False
         # send command and receive data
         data = transport.send_n_receive(self.requestId, self.messageType,
@@ -268,7 +279,7 @@ class BlockedStatus:
         # parse data
         self.json_data = data
         self.success = check_success(data)
-        if data["ret_code"] == 0:
+        if self.success:
             self.blocked = data["blocked"]
             self.block_reason = self.translate_reason(data["block_reason"])
             self.block_x = data["block_x"]
@@ -283,11 +294,15 @@ class BlockedStatus:
         else:
             self.err_msg = data["err_msg"]
             self.create_on = data["create_on"]
+        return self.success
 
 
-class LaserPointData:
+class StatusLaserData:
 
     def __init__(self) -> None:
+        """
+        Get the laser data of the AGV.
+        """
         self.requestId = 0
         self.messageType = 1009  # laser point data query
         self.msg = {}  # empty message
@@ -300,7 +315,7 @@ class LaserPointData:
 
         self.json_data = {}
 
-    def get_status(self, transport):
+    def _get_status(self, transport):
         self.live = False
         # send command and receive data
         data = transport.send_n_receive(self.requestId, self.messageType,
@@ -308,17 +323,19 @@ class LaserPointData:
         # parse data
         self.json_data = data
         self.success = check_success(data)
-        if data["ret_code"] == 0:
+        if self.success:
             self.lasers = data["lasers"]
             self.create_on = data["create_on"]
         else:
             self.err_msg = data["err_msg"]
             self.create_on = data["create_on"]
+        return self.success
 
 
-class EmergencyStop:
+class StatusEmergencyStop:
 
     def __init__(self) -> None:
+        """Emergency stop status query"""
         self.requestId = 0
         self.messageType = 1012  # emergency stop request
         self.msg = {}  # empty message
@@ -335,7 +352,7 @@ class EmergencyStop:
 
         self.json_data = {}
 
-    def get_status(self, transport):
+    def _get_status(self, transport):
         self.live = False
         # send command and receive data
         data = transport.send_n_receive(self.requestId, self.messageType,
@@ -343,7 +360,7 @@ class EmergencyStop:
         # parse data
         self.json_data = data
         self.success = check_success(data)
-        if data["ret_code"] == 0:
+        if self.success:
             self.emergency = data["emergency"]
             self.driver_emc = data["driver_emc"]
             self.electric = data["electric"]
@@ -352,11 +369,13 @@ class EmergencyStop:
         else:
             self.err_msg = data["err_msg"]
             self.create_on = data["create_on"]
+        return self.success
 
 
-class NavigationStatus:
+class StatusNavigation:
 
     def __init__(self) -> None:
+        """Navigation status query"""
         self.requestId = 0
         self.messageType = 1020  # navigation status query
         self.msg = {}  # empty message
@@ -414,13 +433,13 @@ class NavigationStatus:
         else:
             return "Unknown"
 
-    def get_status(self, transport):
+    def _get_status(self, transport):
         data = transport.send_n_receive(self.requestId, self.messageType,
                                         self.msg)
 
         self.json_data = data
         self.success = check_success(data)
-        if data["ret_code"] == 0:
+        if self.success:
             self.task_status = self.translate_task_status(data["task_status"])
             self.task_type = self.translate_task_type(data["task_type"])
             self.target_id = data["target_id"]
@@ -431,72 +450,39 @@ class NavigationStatus:
         else:
             self.err_msg = data["err_msg"]
             self.create_on = data["create_on"]
+        return self.success
 
 
-class Status:
+class StatusAPI:
 
-    def __init__(self, ip, port=API_PORT_STATE) -> None:
-        """_summary_
-
+    def __init__(self, ip: str, port: int = API_PORT_STATE) -> None:
+        """
+        Initialize the AGV STATE API class. This connects to the AGV STATE PORT and exchanges status messages with AGV.
+        
+        Usage:
+        ```python
+        battery_status = StatusBattery()
+        agv_pose = StatusPose()
+        
+        status = StatusAPI("127.0.0.1")
+        status.get_status(battery_status)
+        status.get_status(agv_pose)
+        print(battery_status.voltage)
+        print(battery_status.current)
+        print(agv_pose.x)
+        print(agv_pose.y)
+        
         Args:
-            ip (_type_): AGV ip address
-            port (_type_, optional): port at which AGV STATE API is implemented . Defaults to API_PORT_STATE.
+            ip (str): AGV ip address
+            port (int, optional): port at which AGV STATE API is implemented . Defaults to API_PORT_STATE.
         """
         self.ip = ip
         self.port = port
         self.transport = TcpTransport(ip, port)
-        self.battery = Battery()
-        self.pose = AGV_Pose()
-        self.speed = AGV_Speed()
-        self.forklift = Forklift()
-        self.emergency_stop = EmergencyStop()
-        self.navigation_status = NavigationStatus()
-        self.lasers_point_data = LaserPointData()
-        self.blocked_status = BlockedStatus()
-        self.navigation_status = NavigationStatus()
-
+        self.connected = False
         self.connected = self.transport.connected
 
-    def get_status(self):
-        self.get_battery()
-        # time.sleep(0.1)
-        self.get_pose()
-        # time.sleep(0.1)
-        self.get_speed()
-        # time.sleep(0.1)
-        self.get_forklift()
-        # time.sleep(0.1)
-        self.get_emergency_stop()
-        # time.sleep(0.1)
-        self.get_lasers_point_data()
-        # time.sleep(0.1)
-        self.get_blocked_status()
-        # time.sleep(0.1)
-        self.get_navigation_status()
-
-    def get_pose(self):
-        self.pose.get_status(self.transport)
-
-    def get_speed(self):
-        self.speed.get_status(self.transport)
-
-    def get_battery(self):
-        self.battery.get_status(self.transport)
-
-    def get_forklift(self):
-        self.forklift.get_status(self.transport)
-
-    def get_blocked_status(self):
-        self.blocked_status.get_status(self.transport)
-
-    def get_emergency_stop(self):
-        self.emergency_stop.get_status(self.transport)
-
-    def get_navigation_status(self):
-        self.navigation_status.get_status(self.transport)
-
-    def get_lasers_point_data(self):
-        self.lasers_point_data.get_status(self.transport)
-
-    def get_navigation_status(self):
-        self.navigation_status.get_status(self.transport)
+    def get_status(self, status):
+        """exchange status with AGV for the status class like BatteryStatus, NavigationStatus etc.
+        """
+        return status._get_status(self.transport)
