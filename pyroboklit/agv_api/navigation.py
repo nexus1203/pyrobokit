@@ -54,7 +54,7 @@ class TaskOneStation:
             dest_id (str): destination id must be set as string (e.g. "LM15", "AP14")
             source_id (str): source id is optional but should be set as string (e.g. "LM15", "AP14")
             task_id (str): task number is optional as string (e.g. "82444872")
-            angle (float): The angle value at the target site. The angle is optional and is given in degrees. 
+            angle (float): The angle value in "radians" at the target site. The angle is optional and is given in "radians". 
                         The angle is measured from the x-axis of the map. The angle is measured clockwise. 
             method (str): the movement method can only be "forward" or "backward". It defines how the AGV ill approach the target.
             max_speed (float): maximum speed in m/s
